@@ -10,7 +10,7 @@ const Store = {
     settings: {
         adminId: '1447067732892975276',
         webhookUrl: 'https://discordapp.com/api/webhooks/1523819815511265382/2YclGput2gV-RnydVeuR4mHmEc7YuuTFax-3fCn9dEm8fR3FhAyJC1SQKUvMgG0IeBXX',
-        botToken: 'MTUyMzgyNDI1NzU2NDU0MTE0MA.GNodJg.b1sD8eFtq6SwLkF-BYlUrZm3Fd7L8y89gFJ57g', // Add your bot token here
+        botToken: 'MTUyMzgyNDI1NzU2NDU0MTE0MA.GjDFAR.xGuXYfvuSqLII6Hiz4mv_XCfsz5nZcOwGKhpGI', // Add your bot token here
         guildId: '1391998044601454643', // Your server ID
         whitelistRoleId: '1523827393247318118', // Role ID for whitelisted users
         blacklistRoleId: '1523827450927386695', // Role ID for blacklisted users
