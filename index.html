@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Krylon Key Management Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">
+                <span class="logo-icon">⚡</span>
+                <span class="logo-text">Krylon</span>
+                <span class="logo-version">v2.0</span>
+            </div>
+            <nav class="nav-menu">
+                <a href="#" class="nav-item active" data-tab="dashboard">
+                    <span class="nav-icon">📊</span>
+                    Dashboard
+                </a>
+                <a href="#" class="nav-item" data-tab="keys">
+                    <span class="nav-icon">🔑</span>
+                    Keys
+                </a>
+                <a href="#" class="nav-item" data-tab="users">
+                    <span class="nav-icon">👥</span>
+                    Users
+                </a>
+                <a href="#" class="nav-item" data-tab="blacklist">
+                    <span class="nav-icon">🚫</span>
+                    Blacklist
+                </a>
+                <a href="#" class="nav-item" data-tab="settings">
+                    <span class="nav-icon">⚙️</span>
+                    Settings
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar">A</div>
+                    <div>
+                        <div class="user-name">Admin</div>
+                        <div class="user-status">Online</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <div class="header-left">
+                    <h1 id="page-title">Dashboard</h1>
+                    <p id="page-subtitle" class="subtitle">Welcome back, Admin</p>
+                </div>
+                <div class="header-right">
+                    <button class="btn btn-primary" id="refreshBtn">
+                        <span>🔄</span> Refresh
+                    </button>
+                    <button class="btn btn-success" id="exportBtn">
+                        <span>📤</span> Export
+                    </button>
+                </div>
+            </header>
+
+            <!-- Dashboard Tab -->
+            <div id="dashboard" class="tab-content active">
+                <!-- Stats Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">🔑</div>
+                        <div class="stat-info">
+                            <span class="stat-label">Total Keys</span>
+                            <span class="stat-value" id="totalKeys">0</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">👥</div>
+                        <div class="stat-info">
+                            <span class="stat-label">Active Users</span>
+                            <span class="stat-value" id="totalUsers">0</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">✅</div>
+                        <div class="stat-info">
+                            <span class="stat-label">Whitelisted</span>
+                            <span class="stat-value" id="whitelistedCount">0</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🚫</div>
+                        <div class="stat-info">
+                            <span class="stat-label">Blacklisted</span>
+                            <span class="stat-value" id="blacklistedCount">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Recent Activity</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="activity-list" id="activityList">
+                            <div class="activity-item">
+                                <span class="activity-dot online"></span>
+                                <div class="activity-content">
+                                    <span class="activity-text">System initialized</span>
+                                    <span class="activity-time">Just now</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Keys Tab -->
+            <div id="keys" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Key Management</h2>
+                        <button class="btn btn-primary" id="generateKeyBtn">+ Generate New Key</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="key-generator" id="keyGenerator" style="display:none;">
+                            <h3>Generate New Key</h3>
+                            <div class="form-group">
+                                <label>Expiry Days</label>
+                                <input type="number" id="expiryDays" value="365" min="1" max="3650">
+                            </div>
+                            <div class="form-group">
+                                <label>Max Users</label>
+                                <input type="number" id="maxUsers" value="5" min="1" max="100">
+                            </div>
+                            <div class="form-group">
+                                <label>Key Prefix (optional)</label>
+                                <input type="text" id="keyPrefix" placeholder="KRY-">
+                            </div>
+                            <button class="btn btn-success" id="generateKeySubmit">Generate</button>
+                            <button class="btn btn-secondary" id="cancelGenerate">Cancel</button>
+                        </div>
+
+                        <div class="table-container">
+                            <table class="table" id="keysTable">
+                                <thead>
+                                    <tr>
+                                        <th>Key</th>
+                                        <th>Users</th>
+                                        <th>Max Users</th>
+                                        <th>Expires</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="keysTableBody">
+                                    <!-- Keys will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Users Tab -->
+            <div id="users" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>User Management</h2>
+                        <button class="btn btn-primary" id="addUserBtn">+ Add User</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="user-add" id="userAdd" style="display:none;">
+                            <h3>Add User</h3>
+                            <div class="form-group">
+                                <label>Discord ID</label>
+                                <input type="text" id="userIdInput" placeholder="Enter Discord ID">
+                            </div>
+                            <div class="form-group">
+                                <label>Username (optional)</label>
+                                <input type="text" id="usernameInput" placeholder="Enter username">
+                            </div>
+                            <button class="btn btn-success" id="addUserSubmit">Add User</button>
+                            <button class="btn btn-secondary" id="cancelAddUser">Cancel</button>
+                        </div>
+
+                        <div class="table-container">
+                            <table class="table" id="usersTable">
+                                <thead>
+                                    <tr>
+                                        <th>User</th>
+                                        <th>Discord ID</th>
+                                        <th>Status</th>
+                                        <th>Joined</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="usersTableBody">
+                                    <!-- Users will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Blacklist Tab -->
+            <div id="blacklist" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Blacklist Management</h2>
+                        <button class="btn btn-danger" id="blacklistUserBtn">+ Blacklist User</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="user-add" id="blacklistAdd" style="display:none;">
+                            <h3>Blacklist User</h3>
+                            <div class="form-group">
+                                <label>Discord ID</label>
+                                <input type="text" id="blacklistIdInput" placeholder="Enter Discord ID">
+                            </div>
+                            <div class="form-group">
+                                <label>Reason</label>
+                                <input type="text" id="blacklistReason" placeholder="Enter reason">
+                            </div>
+                            <button class="btn btn-danger" id="blacklistSubmit">Blacklist</button>
+                            <button class="btn btn-secondary" id="cancelBlacklist">Cancel</button>
+                        </div>
+
+                        <div class="table-container">
+                            <table class="table" id="blacklistTable">
+                                <thead>
+                                    <tr>
+                                        <th>User</th>
+                                        <th>Discord ID</th>
+                                        <th>Reason</th>
+                                        <th>Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="blacklistTableBody">
+                                    <!-- Blacklisted users will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div id="settings" class="tab-content">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Settings</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="settings-group">
+                            <h3>General Settings</h3>
+                            <div class="form-group">
+                                <label>Admin Discord ID</label>
+                                <input type="text" id="adminId" placeholder="Enter admin Discord ID">
+                            </div>
+                            <div class="form-group">
+                                <label>Webhook URL</label>
+                                <input type="text" id="webhookUrl" placeholder="Enter webhook URL">
+                            </div>
+                            <button class="btn btn-primary" id="saveSettings">Save Settings</button>
+                        </div>
+
+                        <div class="settings-group">
+                            <h3>Security Settings</h3>
+                            <div class="form-group">
+                                <label>Max Login Attempts</label>
+                                <input type="number" id="maxAttempts" value="3" min="1" max="10">
+                            </div>
+                            <div class="form-group">
+                                <label>Cooldown (seconds)</label>
+                                <input type="number" id="cooldownTime" value="300" min="30" max="3600">
+                            </div>
+                        </div>
+
+                        <div class="settings-group">
+                            <h3>Data Management</h3>
+                            <button class="btn btn-danger" id="clearAllData">Clear All Data</button>
+                            <button class="btn btn-primary" id="exportAllData">Export All Data</button>
+                            <button class="btn btn-secondary" id="importDataBtn">Import Data</button>
+                            <input type="file" id="importFile" style="display:none;" accept=".json">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
