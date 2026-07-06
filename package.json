@@ -1,0 +1,13 @@
+{
+    "name": "revere-discord-bot",
+    "version": "1.0.0",
+    "description": "Revere Discord Bot for whitelist/blacklist management",
+    "main": "bot.js",
+    "scripts": {
+        "start": "node bot.js"
+    },
+    "dependencies": {
+        "discord.js": "^14.14.1",
+        "express": "^4.18.2"
+    }
+}
