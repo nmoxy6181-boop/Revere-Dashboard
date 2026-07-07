@@ -1,5 +1,5 @@
 // ============================================
-// REVERE DISCORD BOT (WITH CORS FIX)
+// REVERE DISCORD BOT (FIXED DM HANDLING)
 // ============================================
 
 const { Client, GatewayIntentBits, Partials } = require('discord.js');
@@ -67,20 +67,44 @@ client.on('error', (error) => {
 });
 
 // ============================================
+// DM HELPER FUNCTION
+// ============================================
+
+async function sendDM(userId, message) {
+    try {
+        const user = await client.users.fetch(userId);
+        if (!user) {
+            console.log(`⚠️ User ${userId} not found`);
+            return { success: false, error: 'User not found' };
+        }
+        
+        await user.send(message);
+        console.log(`✅ DM sent to ${userId}`);
+        return { success: true };
+    } catch (error) {
+        console.log(`⚠️ Failed to DM ${userId}: ${error.message}`);
+        
+        // Check if user has DMs disabled
+        if (error.code === 50007) {
+            return { success: false, error: 'User has DMs disabled' };
+        }
+        return { success: false, error: error.message };
+    }
+}
+
+// ============================================
 // EXPRESS API SERVER WITH CORS
 // ============================================
 
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// CORS Middleware - FIXES "Failed to fetch" error
+// CORS Middleware
 app.use((req, res, next) => {
-    // Allow all origins
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
     
-    // Handle preflight requests
     if (req.method === 'OPTIONS') {
         res.sendStatus(200);
         return;
@@ -103,7 +127,10 @@ app.get('/health', (req, res) => {
     });
 });
 
-// Whitelist endpoint
+// ============================================
+// WHITELIST ENDPOINT
+// ============================================
+
 app.post('/api/whitelist', async (req, res) => {
     console.log('📨 Received whitelist request:', req.body);
     
@@ -127,24 +154,33 @@ app.post('/api/whitelist', async (req, res) => {
         } catch (e) {}
 
         // Send DM
-        try {
-            const user = await client.users.fetch(userId);
-            await user.send(`
+        const dmMessage = `
 **🔓 You've Been Whitelisted!**
 
 You have been granted access to **Revere**.
 
-**Status:** ✅ Whitelisted
-**Date:** ${new Date().toLocaleDateString()}
+━━━━━━━━━━━━━━━━━━━
+**📋 Details:**
+- **Status:** ✅ Whitelisted
+- **Date:** ${new Date().toLocaleString()}
 
-Launch Revere and enter your Discord ID: \`${userId}\`
-            `.trim());
-            console.log(`✅ Sent DM to ${userId}`);
-        } catch (e) {
-            console.log(`⚠️ Could not DM ${userId}: ${e.message}`);
-        }
+**🔑 How to Use:**
+1. Launch the Revere script
+2. Enter your Discord ID: \`${userId}\`
+3. You'll automatically be granted access!
 
-        res.json({ success: true, message: `Whitelisted ${userId}` });
+━━━━━━━━━━━━━━━━━━━
+*If you have any issues, contact an administrator.*
+        `.trim();
+        
+        const dmResult = await sendDM(userId, dmMessage);
+        
+        res.json({
+            success: true,
+            message: `Whitelisted ${userId}`,
+            dmSent: dmResult.success,
+            dmError: dmResult.error || null
+        });
 
     } catch (error) {
         console.error(`❌ Failed to whitelist ${userId}:`, error.message);
@@ -152,7 +188,10 @@ Launch Revere and enter your Discord ID: \`${userId}\`
     }
 });
 
-// Blacklist endpoint
+// ============================================
+// BLACKLIST ENDPOINT (FIXED)
+// ============================================
+
 app.post('/api/blacklist', async (req, res) => {
     console.log('📨 Received blacklist request:', req.body);
     
@@ -163,37 +202,59 @@ app.post('/api/blacklist', async (req, res) => {
 
     try {
         const guild = await client.guilds.fetch(GUILD_ID);
-        const member = await guild.members.fetch(userId);
         
-        // Add blacklist role
-        await member.roles.add(BLACKLIST_ROLE_ID);
-        console.log(`✅ Added blacklist role to ${userId}`);
-        
-        // Remove whitelist role
+        // Try to get member
+        let member = null;
         try {
-            await member.roles.remove(WHITELIST_ROLE_ID);
-            console.log(`✅ Removed whitelist role from ${userId}`);
-        } catch (e) {}
-
-        // Send DM
-        try {
-            const user = await client.users.fetch(userId);
-            await user.send(`
-**⛔ You've Been Blacklisted!**
-
-You have been removed from **Revere**.
-
-**Reason:** ${reason || 'No reason provided'}
-**Date:** ${new Date().toLocaleDateString()}
-
-Contact an administrator if you believe this is a mistake.
-            `.trim());
-            console.log(`✅ Sent DM to ${userId}`);
+            member = await guild.members.fetch(userId);
         } catch (e) {
-            console.log(`⚠️ Could not DM ${userId}: ${e.message}`);
+            console.log(`⚠️ User ${userId} not in server, but continuing...`);
+        }
+        
+        // Add blacklist role if member exists
+        if (member) {
+            await member.roles.add(BLACKLIST_ROLE_ID);
+            console.log(`✅ Added blacklist role to ${userId}`);
+            
+            // Remove whitelist role
+            try {
+                await member.roles.remove(WHITELIST_ROLE_ID);
+                console.log(`✅ Removed whitelist role from ${userId}`);
+            } catch (e) {}
+        } else {
+            console.log(`⚠️ User ${userId} not in server, cannot assign role`);
         }
 
-        res.json({ success: true, message: `Blacklisted ${userId}` });
+        // Send DM - THIS IS THE IMPORTANT PART
+        const dmMessage = `
+**⛔ You've Been Blacklisted!**
+
+You have been **removed** from **Revere**.
+
+━━━━━━━━━━━━━━━━━━━
+**📋 Details:**
+- **Status:** 🚫 Blacklisted
+- **Date:** ${new Date().toLocaleString()}
+- **Reason:** ${reason || 'No reason provided'}
+
+**What This Means:**
+- ❌ You can no longer use Revere
+- ❌ Your access has been revoked
+- ❌ You have been removed from the whitelist
+
+━━━━━━━━━━━━━━━━━━━
+*If you believe this is a mistake, contact an administrator.*
+        `.trim();
+        
+        const dmResult = await sendDM(userId, dmMessage);
+        
+        res.json({
+            success: true,
+            message: `Blacklisted ${userId}`,
+            dmSent: dmResult.success,
+            dmError: dmResult.error || null,
+            roleAssigned: !!member
+        });
 
     } catch (error) {
         console.error(`❌ Failed to blacklist ${userId}:`, error.message);
@@ -201,7 +262,10 @@ Contact an administrator if you believe this is a mistake.
     }
 });
 
-// Unblacklist endpoint
+// ============================================
+// UNBLACKLIST ENDPOINT
+// ============================================
+
 app.post('/api/unblacklist', async (req, res) => {
     console.log('📨 Received unblacklist request:', req.body);
     
@@ -212,23 +276,37 @@ app.post('/api/unblacklist', async (req, res) => {
 
     try {
         const guild = await client.guilds.fetch(GUILD_ID);
-        const member = await guild.members.fetch(userId);
         
-        await member.roles.remove(BLACKLIST_ROLE_ID);
-        console.log(`✅ Removed blacklist role from ${userId}`);
-
         try {
-            const user = await client.users.fetch(userId);
-            await user.send(`
+            const member = await guild.members.fetch(userId);
+            await member.roles.remove(BLACKLIST_ROLE_ID);
+            console.log(`✅ Removed blacklist role from ${userId}`);
+        } catch (e) {
+            console.log(`⚠️ User ${userId} not in server, cannot remove role`);
+        }
+
+        // Send DM
+        const dmMessage = `
 **✅ You've Been Unblacklisted!**
 
 Your access to **Revere** has been restored.
-**Date:** ${new Date().toLocaleDateString()}
-            `.trim());
-            console.log(`✅ Sent DM to ${userId}`);
-        } catch (e) {}
 
-        res.json({ success: true, message: `Unblacklisted ${userId}` });
+━━━━━━━━━━━━━━━━━━━
+**📋 Details:**
+- **Status:** ✅ Unblacklisted
+- **Date:** ${new Date().toLocaleString()}
+
+You can now use Revere again.
+        `.trim();
+        
+        const dmResult = await sendDM(userId, dmMessage);
+
+        res.json({
+            success: true,
+            message: `Unblacklisted ${userId}`,
+            dmSent: dmResult.success,
+            dmError: dmResult.error || null
+        });
 
     } catch (error) {
         console.error(`❌ Failed to unblacklist ${userId}:`, error.message);
