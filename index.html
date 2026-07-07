@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>REVERE Key Management Dashboard</title>
+    <title>Revere Key Management Dashboard</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
@@ -55,13 +55,13 @@
             <header class="header">
                 <div class="header-left">
                     <h1 id="page-title">Dashboard</h1>
-                    <p id="page-subtitle" class="subtitle">Welcome to, REVERE</p>
+                    <p id="page-subtitle" class="subtitle">Welcome back, Admin</p>
                 </div>
                 <div class="header-right">
                     <button class="btn btn-primary" id="refreshBtn">
                         <span>🔄</span> Refresh
                     </button>
-                    <button class="btn btn-success" id="exportBtn">
+                    <button class="btn btn-success" onclick="exportAllData()">
                         <span>📤</span> Export
                     </button>
                 </div>
@@ -69,7 +69,6 @@
 
             <!-- Dashboard Tab -->
             <div id="dashboard" class="tab-content active">
-                <!-- Stats Cards -->
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-icon">🔑</div>
@@ -101,7 +100,6 @@
                     </div>
                 </div>
 
-                <!-- Recent Activity -->
                 <div class="card">
                     <div class="card-header">
                         <h2>Recent Activity</h2>
@@ -125,25 +123,25 @@
                 <div class="card">
                     <div class="card-header">
                         <h2>Key Management</h2>
-                        <button class="btn btn-primary" id="generateKeyBtn">+ Generate New Key</button>
+                        <button class="btn btn-primary" onclick="document.getElementById('keyGenerator').style.display='block'">+ Generate New Key</button>
                     </div>
                     <div class="card-body">
                         <div class="key-generator" id="keyGenerator" style="display:none;">
                             <h3>Generate New Key</h3>
                             <div class="form-group">
-                                <label>Expiry Days</label>
+                                <label for="expiryDays">Expiry Days</label>
                                 <input type="number" id="expiryDays" value="365" min="1" max="3650">
                             </div>
                             <div class="form-group">
-                                <label>Max Users</label>
+                                <label for="maxUsers">Max Users</label>
                                 <input type="number" id="maxUsers" value="5" min="1" max="100">
                             </div>
                             <div class="form-group">
-                                <label>Key Prefix (optional)</label>
+                                <label for="keyPrefix">Key Prefix (optional)</label>
                                 <input type="text" id="keyPrefix" placeholder="KRY-">
                             </div>
-                            <button class="btn btn-success" id="generateKeySubmit">Generate</button>
-                            <button class="btn btn-secondary" id="cancelGenerate">Cancel</button>
+                            <button class="btn btn-success" onclick="generateKey()">Generate</button>
+                            <button class="btn btn-secondary" onclick="document.getElementById('keyGenerator').style.display='none'">Cancel</button>
                         </div>
 
                         <div class="table-container">
@@ -159,7 +157,6 @@
                                     </tr>
                                 </thead>
                                 <tbody id="keysTableBody">
-                                    <!-- Keys will be loaded here -->
                                 </tbody>
                             </table>
                         </div>
@@ -172,21 +169,21 @@
                 <div class="card">
                     <div class="card-header">
                         <h2>User Management</h2>
-                        <button class="btn btn-primary" id="addUserBtn">+ Add User</button>
+                        <button class="btn btn-primary" onclick="document.getElementById('userAdd').style.display='block'">+ Add User</button>
                     </div>
                     <div class="card-body">
                         <div class="user-add" id="userAdd" style="display:none;">
                             <h3>Add User</h3>
                             <div class="form-group">
-                                <label>Discord ID</label>
+                                <label for="userIdInput">Discord ID</label>
                                 <input type="text" id="userIdInput" placeholder="Enter Discord ID">
                             </div>
                             <div class="form-group">
-                                <label>Username (optional)</label>
+                                <label for="usernameInput">Username (optional)</label>
                                 <input type="text" id="usernameInput" placeholder="Enter username">
                             </div>
-                            <button class="btn btn-success" id="addUserSubmit">Add User</button>
-                            <button class="btn btn-secondary" id="cancelAddUser">Cancel</button>
+                            <button class="btn btn-success" onclick="addUser()">Add User</button>
+                            <button class="btn btn-secondary" onclick="document.getElementById('userAdd').style.display='none'">Cancel</button>
                         </div>
 
                         <div class="table-container">
@@ -201,7 +198,6 @@
                                     </tr>
                                 </thead>
                                 <tbody id="usersTableBody">
-                                    <!-- Users will be loaded here -->
                                 </tbody>
                             </table>
                         </div>
@@ -214,21 +210,21 @@
                 <div class="card">
                     <div class="card-header">
                         <h2>Blacklist Management</h2>
-                        <button class="btn btn-danger" id="blacklistUserBtn">+ Blacklist User</button>
+                        <button class="btn btn-danger" onclick="document.getElementById('blacklistAdd').style.display='block'">+ Blacklist User</button>
                     </div>
                     <div class="card-body">
                         <div class="user-add" id="blacklistAdd" style="display:none;">
                             <h3>Blacklist User</h3>
                             <div class="form-group">
-                                <label>Discord ID</label>
+                                <label for="blacklistIdInput">Discord ID</label>
                                 <input type="text" id="blacklistIdInput" placeholder="Enter Discord ID">
                             </div>
                             <div class="form-group">
-                                <label>Reason</label>
+                                <label for="blacklistReason">Reason</label>
                                 <input type="text" id="blacklistReason" placeholder="Enter reason">
                             </div>
-                            <button class="btn btn-danger" id="blacklistSubmit">Blacklist</button>
-                            <button class="btn btn-secondary" id="cancelBlacklist">Cancel</button>
+                            <button class="btn btn-danger" onclick="blacklistUser()">Blacklist</button>
+                            <button class="btn btn-secondary" onclick="document.getElementById('blacklistAdd').style.display='none'">Cancel</button>
                         </div>
 
                         <div class="table-container">
@@ -243,7 +239,6 @@
                                     </tr>
                                 </thead>
                                 <tbody id="blacklistTableBody">
-                                    <!-- Blacklisted users will be loaded here -->
                                 </tbody>
                             </table>
                         </div>
@@ -261,34 +256,22 @@
                         <div class="settings-group">
                             <h3>General Settings</h3>
                             <div class="form-group">
-                                <label>Admin Discord ID</label>
+                                <label for="adminId">Admin Discord ID</label>
                                 <input type="text" id="adminId" placeholder="Enter admin Discord ID">
                             </div>
                             <div class="form-group">
-                                <label>Webhook URL</label>
+                                <label for="webhookUrl">Webhook URL</label>
                                 <input type="text" id="webhookUrl" placeholder="Enter webhook URL">
                             </div>
-                            <button class="btn btn-primary" id="saveSettings">Save Settings</button>
-                        </div>
-
-                        <div class="settings-group">
-                            <h3>Security Settings</h3>
-                            <div class="form-group">
-                                <label>Max Login Attempts</label>
-                                <input type="number" id="maxAttempts" value="3" min="1" max="10">
-                            </div>
-                            <div class="form-group">
-                                <label>Cooldown (seconds)</label>
-                                <input type="number" id="cooldownTime" value="300" min="30" max="3600">
-                            </div>
+                            <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
                         </div>
 
                         <div class="settings-group">
                             <h3>Data Management</h3>
-                            <button class="btn btn-danger" id="clearAllData">Clear All Data</button>
-                            <button class="btn btn-primary" id="exportAllData">Export All Data</button>
-                            <button class="btn btn-secondary" id="importDataBtn">Import Data</button>
-                            <input type="file" id="importFile" style="display:none;" accept=".json">
+                            <button class="btn btn-danger" onclick="clearAllData()">Clear All Data</button>
+                            <button class="btn btn-primary" onclick="exportAllData()">Export All Data</button>
+                            <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">Import Data</button>
+                            <input type="file" id="importFile" style="display:none;" accept=".json" onchange="importData(event)">
                         </div>
                     </div>
                 </div>
