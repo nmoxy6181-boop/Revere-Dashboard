@@ -1,5 +1,5 @@
 // ============================================
-// REVERE DISCORD BOT (FIXED)
+// REVERE DISCORD BOT (WITH CORS FIX)
 // ============================================
 
 const { Client, GatewayIntentBits, Partials } = require('discord.js');
@@ -9,37 +9,29 @@ const express = require('express');
 // READ ENVIRONMENT VARIABLES
 // ============================================
 
-// Get variables from environment (Render's env vars)
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 const GUILD_ID = process.env.GUILD_ID;
 const WHITELIST_ROLE_ID = process.env.WHITELIST_ROLE_ID;
 const BLACKLIST_ROLE_ID = process.env.BLACKLIST_ROLE_ID;
 const ADMIN_ID = process.env.ADMIN_ID;
 
-// Log what we found (without exposing full token)
 console.log('📋 Environment Variables Check:');
-console.log(`  DISCORD_TOKEN: ${DISCORD_TOKEN ? '✅ SET (starts with ' + DISCORD_TOKEN.substring(0, 15) + '...)' : '❌ MISSING'}`);
+console.log(`  DISCORD_TOKEN: ${DISCORD_TOKEN ? '✅ SET' : '❌ MISSING'}`);
 console.log(`  GUILD_ID: ${GUILD_ID || '❌ MISSING'}`);
 console.log(`  WHITELIST_ROLE_ID: ${WHITELIST_ROLE_ID || '❌ MISSING'}`);
 console.log(`  BLACKLIST_ROLE_ID: ${BLACKLIST_ROLE_ID || '❌ MISSING'}`);
 console.log(`  ADMIN_ID: ${ADMIN_ID || '❌ MISSING'}`);
 
-// ============================================
-// VALIDATE CONFIGURATION
-// ============================================
-
+// Validate
 const errors = [];
 if (!DISCORD_TOKEN) errors.push('❌ DISCORD_TOKEN is missing!');
 if (!GUILD_ID) errors.push('❌ GUILD_ID is missing!');
 if (!WHITELIST_ROLE_ID) errors.push('❌ WHITELIST_ROLE_ID is missing!');
 if (!BLACKLIST_ROLE_ID) errors.push('❌ BLACKLIST_ROLE_ID is missing!');
-if (!ADMIN_ID) errors.push('❌ ADMIN_ID is missing!');
 
 if (errors.length > 0) {
     console.error('❌ Configuration errors:');
     errors.forEach(err => console.error(`  ${err}`));
-    console.error('   Please add these environment variables in Render:');
-    console.error('   - Environment tab → Add Environment Variable');
     process.exit(1);
 }
 
@@ -68,7 +60,6 @@ client.once('ready', () => {
     console.log(`📌 Server ID: ${GUILD_ID}`);
     console.log(`🎭 Whitelist Role: ${WHITELIST_ROLE_ID}`);
     console.log(`🚫 Blacklist Role: ${BLACKLIST_ROLE_ID}`);
-    console.log(`🌐 API server running on port ${PORT}`);
 });
 
 client.on('error', (error) => {
@@ -76,13 +67,32 @@ client.on('error', (error) => {
 });
 
 // ============================================
-// EXPRESS API SERVER
+// EXPRESS API SERVER WITH CORS
 // ============================================
 
 const app = express();
 const PORT = process.env.PORT || 8080;
 
+// CORS Middleware - FIXES "Failed to fetch" error
+app.use((req, res, next) => {
+    // Allow all origins
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    
+    // Handle preflight requests
+    if (req.method === 'OPTIONS') {
+        res.sendStatus(200);
+        return;
+    }
+    next();
+});
+
 app.use(express.json());
+
+// ============================================
+// API ENDPOINTS
+// ============================================
 
 // Health check
 app.get('/health', (req, res) => {
@@ -95,6 +105,8 @@ app.get('/health', (req, res) => {
 
 // Whitelist endpoint
 app.post('/api/whitelist', async (req, res) => {
+    console.log('📨 Received whitelist request:', req.body);
+    
     const { userId, username } = req.body;
     if (!userId) {
         return res.status(400).json({ success: false, error: 'Missing userId' });
@@ -142,6 +154,8 @@ Launch Revere and enter your Discord ID: \`${userId}\`
 
 // Blacklist endpoint
 app.post('/api/blacklist', async (req, res) => {
+    console.log('📨 Received blacklist request:', req.body);
+    
     const { userId, reason } = req.body;
     if (!userId) {
         return res.status(400).json({ success: false, error: 'Missing userId' });
@@ -189,6 +203,8 @@ Contact an administrator if you believe this is a mistake.
 
 // Unblacklist endpoint
 app.post('/api/unblacklist', async (req, res) => {
+    console.log('📨 Received unblacklist request:', req.body);
+    
     const { userId } = req.body;
     if (!userId) {
         return res.status(400).json({ success: false, error: 'Missing userId' });
@@ -228,5 +244,7 @@ app.listen(PORT, () => {
     console.log(`🌐 API server running on port ${PORT}`);
 });
 
-// Login to Discord
-client.login(DISCORD_TOKEN);
+client.login(DISCORD_TOKEN).catch(error => {
+    console.error('❌ Failed to login:', error.message);
+    process.exit(1);
+});
