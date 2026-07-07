@@ -123,7 +123,7 @@
                 <div class="card">
                     <div class="card-header">
                         <h2>Key Management</h2>
-                        <button class="btn btn-primary" onclick="document.getElementById('keyGenerator').style.display='block'">+ Generate New Key</button>
+                        <button class="btn btn-primary" onclick="showKeyGenerator()">+ Generate New Key</button>
                     </div>
                     <div class="card-body">
                         <div class="key-generator" id="keyGenerator" style="display:none;">
@@ -141,7 +141,7 @@
                                 <input type="text" id="keyPrefix" placeholder="KRY-">
                             </div>
                             <button class="btn btn-success" onclick="generateKey()">Generate</button>
-                            <button class="btn btn-secondary" onclick="document.getElementById('keyGenerator').style.display='none'">Cancel</button>
+                            <button class="btn btn-secondary" onclick="cancelGenerate()">Cancel</button>
                         </div>
 
                         <div class="table-container">
@@ -169,7 +169,7 @@
                 <div class="card">
                     <div class="card-header">
                         <h2>User Management</h2>
-                        <button class="btn btn-primary" onclick="document.getElementById('userAdd').style.display='block'">+ Add User</button>
+                        <button class="btn btn-primary" onclick="showUserAdd()">+ Add User</button>
                     </div>
                     <div class="card-body">
                         <div class="user-add" id="userAdd" style="display:none;">
@@ -183,7 +183,7 @@
                                 <input type="text" id="usernameInput" placeholder="Enter username">
                             </div>
                             <button class="btn btn-success" onclick="addUser()">Add User</button>
-                            <button class="btn btn-secondary" onclick="document.getElementById('userAdd').style.display='none'">Cancel</button>
+                            <button class="btn btn-secondary" onclick="cancelAddUser()">Cancel</button>
                         </div>
 
                         <div class="table-container">
@@ -210,7 +210,7 @@
                 <div class="card">
                     <div class="card-header">
                         <h2>Blacklist Management</h2>
-                        <button class="btn btn-danger" onclick="document.getElementById('blacklistAdd').style.display='block'">+ Blacklist User</button>
+                        <button class="btn btn-danger" onclick="showBlacklistAdd()">+ Blacklist User</button>
                     </div>
                     <div class="card-body">
                         <div class="user-add" id="blacklistAdd" style="display:none;">
@@ -224,7 +224,7 @@
                                 <input type="text" id="blacklistReason" placeholder="Enter reason">
                             </div>
                             <button class="btn btn-danger" onclick="blacklistUser()">Blacklist</button>
-                            <button class="btn btn-secondary" onclick="document.getElementById('blacklistAdd').style.display='none'">Cancel</button>
+                            <button class="btn btn-secondary" onclick="cancelBlacklist()">Cancel</button>
                         </div>
 
                         <div class="table-container">
@@ -260,8 +260,8 @@
                                 <input type="text" id="adminId" placeholder="Enter admin Discord ID">
                             </div>
                             <div class="form-group">
-                                <label for="webhookUrl">Webhook URL</label>
-                                <input type="text" id="webhookUrl" placeholder="Enter webhook URL">
+                                <label for="webhookUrl">Bot API URL</label>
+                                <input type="text" id="webhookUrl" placeholder="https://revere-bot.onrender.com">
                             </div>
                             <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
                         </div>
