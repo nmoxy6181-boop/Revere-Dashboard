@@ -2,6 +2,9 @@
 // REVERE KEY MANAGEMENT DASHBOARD - COMPLETE
 // ============================================
 
+// Bot API URL
+const BOT_API_URL = 'https://revere-bot.onrender.com';
+
 // Data Store
 let data = {
     keys: [],
@@ -11,33 +14,41 @@ let data = {
 };
 
 // ============================================
+// BOT API CONNECTION
+// ============================================
+
+async function callBotAPI(endpoint, data) {
+    try {
+        const response = await fetch(`${BOT_API_URL}${endpoint}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const result = await response.json();
+        console.log('📨 Bot API response:', result);
+        return result;
+    } catch (error) {
+        console.error('❌ Bot API error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+// ============================================
 // INITIALIZATION
 // ============================================
 
-// Wait for DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 REVERE Dashboard loading...');
-    
-    // Load saved data
     loadData();
-    
-    // Setup tab navigation
     setupTabs();
+    loadSettings();
     
-    // Setup refresh button
+    // Refresh button
     const refreshBtn = document.getElementById('refreshBtn');
     if (refreshBtn) {
         refreshBtn.addEventListener('click', function() {
             renderAll();
-            showToast('Refreshed!', 'info');
-        });
-    }
-    
-    // Setup generate key button
-    const genBtn = document.querySelector('.card-header .btn-primary');
-    if (genBtn) {
-        genBtn.addEventListener('click', function() {
-            document.getElementById('keyGenerator').style.display = 'block';
+            showToast('🔄 Refreshed!', 'info');
         });
     }
     
@@ -55,9 +66,8 @@ function loadData() {
             data = JSON.parse(saved);
             console.log('📂 Data loaded from localStorage');
         } else {
-            // Add default data
             data.keys = [
-                { key: 'KRY-DEMO-001', users: 0, maxUsers: 5, expires: '2027-01-01', status: 'active' }
+                { key: 'REV-DEMO-001', users: 0, maxUsers: 5, expires: '2027-01-01', status: 'active' }
             ];
             data.activity = ['System initialized', 'Default key added'];
             saveData();
@@ -196,6 +206,14 @@ function renderActivity() {
 // KEY FUNCTIONS
 // ============================================
 
+function showKeyGenerator() {
+    document.getElementById('keyGenerator').style.display = 'block';
+}
+
+function cancelGenerate() {
+    document.getElementById('keyGenerator').style.display = 'none';
+}
+
 function generateKey() {
     console.log('🔑 Generating key...');
     
@@ -208,7 +226,7 @@ function generateKey() {
     const prefix = prefixInput ? prefixInput.value.trim() : '';
     
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let key = prefix || 'KRY-';
+    let key = prefix || 'REV-';
     for (let i = 0; i < 12; i++) {
         key += chars[Math.floor(Math.random() * chars.length)];
         if (i % 4 === 3 && i < 11) key += '-';
@@ -229,20 +247,14 @@ function generateKey() {
     saveData();
     renderAll();
     
-    // Hide generator
-    const generator = document.getElementById('keyGenerator');
-    if (generator) generator.style.display = 'none';
-    
-    // Clear inputs
+    document.getElementById('keyGenerator').style.display = 'none';
     if (prefixInput) prefixInput.value = '';
     
     showToast(`✅ Key generated: ${key}`, 'success');
     
-    // Copy to clipboard
     try {
         navigator.clipboard.writeText(key);
     } catch(e) {
-        // Fallback - show key in console
         console.log('📋 Key:', key);
     }
 }
@@ -268,10 +280,18 @@ function toggleKey(index) {
 }
 
 // ============================================
-// USER FUNCTIONS
+// USER FUNCTIONS (WITH BOT API)
 // ============================================
 
-function addUser() {
+function showUserAdd() {
+    document.getElementById('userAdd').style.display = 'block';
+}
+
+function cancelAddUser() {
+    document.getElementById('userAdd').style.display = 'none';
+}
+
+async function addUser() {
     console.log('👤 Adding user...');
     
     const idInput = document.getElementById('userIdInput');
@@ -295,26 +315,33 @@ function addUser() {
         return;
     }
     
-    data.users.push({
-        discordId: discordId,
-        username: username || `User_${discordId.slice(-4)}`,
-        status: 'whitelisted',
-        joined: new Date().toISOString()
+    // Call the bot API to whitelist the user
+    showToast('📨 Sending to bot...', 'info');
+    const result = await callBotAPI('/api/whitelist', {
+        userId: discordId,
+        username: username || `User_${discordId.slice(-4)}`
     });
     
-    data.activity.unshift(`Added user: ${username || discordId}`);
-    saveData();
-    renderAll();
-    
-    // Clear inputs
-    if (idInput) idInput.value = '';
-    if (nameInput) nameInput.value = '';
-    
-    // Hide add form
-    const addForm = document.getElementById('userAdd');
-    if (addForm) addForm.style.display = 'none';
-    
-    showToast(`✅ User ${username || discordId} whitelisted!`, 'success');
+    if (result.success) {
+        data.users.push({
+            discordId: discordId,
+            username: username || `User_${discordId.slice(-4)}`,
+            status: 'whitelisted',
+            joined: new Date().toISOString()
+        });
+        
+        data.activity.unshift(`✅ User ${username || discordId} whitelisted via bot`);
+        saveData();
+        renderAll();
+        
+        if (idInput) idInput.value = '';
+        if (nameInput) nameInput.value = '';
+        document.getElementById('userAdd').style.display = 'none';
+        
+        showToast(`✅ User ${username || discordId} whitelisted!`, 'success');
+    } else {
+        showToast(`❌ Bot error: ${result.error || 'Unknown error'}`, 'error');
+    }
 }
 
 function removeUser(index) {
@@ -344,10 +371,18 @@ function blacklistUserFromList(index) {
 }
 
 // ============================================
-// BLACKLIST FUNCTIONS
+// BLACKLIST FUNCTIONS (WITH BOT API)
 // ============================================
 
-function blacklistUser() {
+function showBlacklistAdd() {
+    document.getElementById('blacklistAdd').style.display = 'block';
+}
+
+function cancelBlacklist() {
+    document.getElementById('blacklistAdd').style.display = 'none';
+}
+
+async function blacklistUser() {
     console.log('🚫 Blacklisting user...');
     
     const idInput = document.getElementById('blacklistIdInput');
@@ -371,38 +406,54 @@ function blacklistUser() {
         return;
     }
     
-    // Remove from whitelist if exists
-    data.users = data.users.filter(u => u.discordId !== discordId);
-    
-    data.blacklist.push({
-        discordId: discordId,
-        reason: reason,
-        date: new Date().toISOString()
+    // Call the bot API to blacklist the user
+    showToast('📨 Sending to bot...', 'info');
+    const result = await callBotAPI('/api/blacklist', {
+        userId: discordId,
+        reason: reason
     });
     
-    data.activity.unshift(`Blacklisted user: ${discordId}`);
-    saveData();
-    renderAll();
-    
-    // Clear inputs
-    if (idInput) idInput.value = '';
-    if (reasonInput) reasonInput.value = '';
-    
-    // Hide add form
-    const addForm = document.getElementById('blacklistAdd');
-    if (addForm) addForm.style.display = 'none';
-    
-    showToast(`🚫 User ${discordId} blacklisted!`, 'error');
+    if (result.success) {
+        data.users = data.users.filter(u => u.discordId !== discordId);
+        
+        data.blacklist.push({
+            discordId: discordId,
+            reason: reason,
+            date: new Date().toISOString()
+        });
+        
+        data.activity.unshift(`🚫 User ${discordId} blacklisted via bot`);
+        saveData();
+        renderAll();
+        
+        if (idInput) idInput.value = '';
+        if (reasonInput) reasonInput.value = '';
+        document.getElementById('blacklistAdd').style.display = 'none';
+        
+        showToast(`🚫 User ${discordId} blacklisted!`, 'error');
+    } else {
+        showToast(`❌ Bot error: ${result.error || 'Unknown error'}`, 'error');
+    }
 }
 
-function unblacklistUser(index) {
+async function unblacklistUser(index) {
     const entry = data.blacklist[index];
     if (!confirm(`Unblacklist user ${entry.discordId}?`)) return;
-    data.blacklist.splice(index, 1);
-    data.activity.unshift(`Unblacklisted user: ${entry.discordId}`);
-    saveData();
-    renderAll();
-    showToast(`✅ User unblacklisted!`, 'success');
+    
+    showToast('📨 Sending to bot...', 'info');
+    const result = await callBotAPI('/api/unblacklist', {
+        userId: entry.discordId
+    });
+    
+    if (result.success) {
+        data.blacklist.splice(index, 1);
+        data.activity.unshift(`✅ User ${entry.discordId} unblacklisted via bot`);
+        saveData();
+        renderAll();
+        showToast(`✅ User unblacklisted!`, 'success');
+    } else {
+        showToast(`❌ Bot error: ${result.error || 'Unknown error'}`, 'error');
+    }
 }
 
 // ============================================
@@ -418,6 +469,14 @@ function saveSettings() {
         showToast('✅ Settings saved!', 'success');
     } else {
         showToast('⚠️ Please enter a valid Admin ID', 'error');
+    }
+}
+
+function loadSettings() {
+    const adminId = localStorage.getItem('revere_adminId');
+    if (adminId) {
+        const adminInput = document.getElementById('adminId');
+        if (adminInput) adminInput.value = adminId;
     }
 }
 
@@ -488,18 +547,15 @@ function setupTabs() {
             const tabName = this.dataset.tab;
             console.log(`📑 Switching to tab: ${tabName}`);
             
-            // Update nav items
             navItems.forEach(n => n.classList.remove('active'));
             this.classList.add('active');
             
-            // Update content
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
             const targetTab = document.getElementById(tabName);
             if (targetTab) {
                 targetTab.classList.add('active');
             }
             
-            // Update header
             const titles = {
                 dashboard: 'Dashboard',
                 keys: 'Key Management',
@@ -538,36 +594,8 @@ function showToast(message, type = 'info') {
 }
 
 // ============================================
-// CANCEL FORM FUNCTIONS (for inline onclick)
+// INITIALIZE
 // ============================================
-
-function cancelGenerate() {
-    document.getElementById('keyGenerator').style.display = 'none';
-}
-
-function cancelAddUser() {
-    document.getElementById('userAdd').style.display = 'none';
-}
-
-function cancelBlacklist() {
-    document.getElementById('blacklistAdd').style.display = 'none';
-}
-
-// ============================================
-// LOAD SETTINGS FROM LOCAL STORAGE
-// ============================================
-
-function loadSettings() {
-    const adminId = localStorage.getItem('revere_adminId');
-    if (adminId) {
-        const adminInput = document.getElementById('adminId');
-        if (adminInput) adminInput.value = adminId;
-    }
-}
-
-// Call this after DOM ready
-document.addEventListener('DOMContentLoaded', function() {
-    loadSettings();
-});
 
 console.log('📝 REVERE script loaded!');
+console.log(`🤖 Bot API URL: ${BOT_API_URL}`);
