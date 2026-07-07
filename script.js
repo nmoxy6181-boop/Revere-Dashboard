@@ -43,7 +43,6 @@ document.addEventListener('DOMContentLoaded', function() {
     setupTabs();
     loadSettings();
     
-    // Refresh button
     const refreshBtn = document.getElementById('refreshBtn');
     if (refreshBtn) {
         refreshBtn.addEventListener('click', function() {
@@ -291,8 +290,9 @@ function cancelAddUser() {
     document.getElementById('userAdd').style.display = 'none';
 }
 
-async function addUser() {
-    console.log('👤 Adding user...');
+// FIXED: This function now properly handles the async call
+function addUser() {
+    console.log('👤 Add User button clicked!');
     
     const idInput = document.getElementById('userIdInput');
     const nameInput = document.getElementById('usernameInput');
@@ -315,33 +315,52 @@ async function addUser() {
         return;
     }
     
-    // Call the bot API to whitelist the user
-    showToast('📨 Sending to bot...', 'info');
-    const result = await callBotAPI('/api/whitelist', {
+    // Show loading state
+    const btn = document.querySelector('.user-add .btn-success');
+    const originalText = btn ? btn.textContent : 'Add User';
+    if (btn) {
+        btn.textContent = '⏳ Sending...';
+        btn.disabled = true;
+    }
+    
+    // Call the bot API
+    callBotAPI('/api/whitelist', {
         userId: discordId,
         username: username || `User_${discordId.slice(-4)}`
+    }).then(result => {
+        // Restore button
+        if (btn) {
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }
+        
+        if (result.success) {
+            data.users.push({
+                discordId: discordId,
+                username: username || `User_${discordId.slice(-4)}`,
+                status: 'whitelisted',
+                joined: new Date().toISOString()
+            });
+            
+            data.activity.unshift(`✅ User ${username || discordId} whitelisted via bot`);
+            saveData();
+            renderAll();
+            
+            if (idInput) idInput.value = '';
+            if (nameInput) nameInput.value = '';
+            document.getElementById('userAdd').style.display = 'none';
+            
+            showToast(`✅ User ${username || discordId} whitelisted!`, 'success');
+        } else {
+            showToast(`❌ Bot error: ${result.error || 'Unknown error'}`, 'error');
+        }
+    }).catch(error => {
+        if (btn) {
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }
+        showToast(`❌ Error: ${error.message}`, 'error');
     });
-    
-    if (result.success) {
-        data.users.push({
-            discordId: discordId,
-            username: username || `User_${discordId.slice(-4)}`,
-            status: 'whitelisted',
-            joined: new Date().toISOString()
-        });
-        
-        data.activity.unshift(`✅ User ${username || discordId} whitelisted via bot`);
-        saveData();
-        renderAll();
-        
-        if (idInput) idInput.value = '';
-        if (nameInput) nameInput.value = '';
-        document.getElementById('userAdd').style.display = 'none';
-        
-        showToast(`✅ User ${username || discordId} whitelisted!`, 'success');
-    } else {
-        showToast(`❌ Bot error: ${result.error || 'Unknown error'}`, 'error');
-    }
 }
 
 function removeUser(index) {
@@ -382,7 +401,7 @@ function cancelBlacklist() {
     document.getElementById('blacklistAdd').style.display = 'none';
 }
 
-async function blacklistUser() {
+function blacklistUser() {
     console.log('🚫 Blacklisting user...');
     
     const idInput = document.getElementById('blacklistIdInput');
@@ -406,54 +425,89 @@ async function blacklistUser() {
         return;
     }
     
-    // Call the bot API to blacklist the user
-    showToast('📨 Sending to bot...', 'info');
-    const result = await callBotAPI('/api/blacklist', {
+    // Show loading state
+    const btn = document.querySelector('.user-add .btn-danger');
+    const originalText = btn ? btn.textContent : 'Blacklist';
+    if (btn) {
+        btn.textContent = '⏳ Sending...';
+        btn.disabled = true;
+    }
+    
+    callBotAPI('/api/blacklist', {
         userId: discordId,
         reason: reason
+    }).then(result => {
+        if (btn) {
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }
+        
+        if (result.success) {
+            data.users = data.users.filter(u => u.discordId !== discordId);
+            
+            data.blacklist.push({
+                discordId: discordId,
+                reason: reason,
+                date: new Date().toISOString()
+            });
+            
+            data.activity.unshift(`🚫 User ${discordId} blacklisted via bot`);
+            saveData();
+            renderAll();
+            
+            if (idInput) idInput.value = '';
+            if (reasonInput) reasonInput.value = '';
+            document.getElementById('blacklistAdd').style.display = 'none';
+            
+            showToast(`🚫 User ${discordId} blacklisted!`, 'error');
+        } else {
+            showToast(`❌ Bot error: ${result.error || 'Unknown error'}`, 'error');
+        }
+    }).catch(error => {
+        if (btn) {
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }
+        showToast(`❌ Error: ${error.message}`, 'error');
     });
-    
-    if (result.success) {
-        data.users = data.users.filter(u => u.discordId !== discordId);
-        
-        data.blacklist.push({
-            discordId: discordId,
-            reason: reason,
-            date: new Date().toISOString()
-        });
-        
-        data.activity.unshift(`🚫 User ${discordId} blacklisted via bot`);
-        saveData();
-        renderAll();
-        
-        if (idInput) idInput.value = '';
-        if (reasonInput) reasonInput.value = '';
-        document.getElementById('blacklistAdd').style.display = 'none';
-        
-        showToast(`🚫 User ${discordId} blacklisted!`, 'error');
-    } else {
-        showToast(`❌ Bot error: ${result.error || 'Unknown error'}`, 'error');
-    }
 }
 
-async function unblacklistUser(index) {
+function unblacklistUser(index) {
     const entry = data.blacklist[index];
     if (!confirm(`Unblacklist user ${entry.discordId}?`)) return;
     
-    showToast('📨 Sending to bot...', 'info');
-    const result = await callBotAPI('/api/unblacklist', {
-        userId: entry.discordId
-    });
-    
-    if (result.success) {
-        data.blacklist.splice(index, 1);
-        data.activity.unshift(`✅ User ${entry.discordId} unblacklisted via bot`);
-        saveData();
-        renderAll();
-        showToast(`✅ User unblacklisted!`, 'success');
-    } else {
-        showToast(`❌ Bot error: ${result.error || 'Unknown error'}`, 'error');
+    // Show loading state
+    const btn = document.querySelector(`#blacklistTableBody tr:nth-child(${index+1}) .btn-success`);
+    const originalText = btn ? btn.textContent : 'Unblacklist';
+    if (btn) {
+        btn.textContent = '⏳...';
+        btn.disabled = true;
     }
+    
+    callBotAPI('/api/unblacklist', {
+        userId: entry.discordId
+    }).then(result => {
+        if (btn) {
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }
+        
+        if (result.success) {
+            data.blacklist.splice(index, 1);
+            data.activity.unshift(`✅ User ${entry.discordId} unblacklisted via bot`);
+            saveData();
+            renderAll();
+            showToast(`✅ User unblacklisted!`, 'success');
+        } else {
+            showToast(`❌ Bot error: ${result.error || 'Unknown error'}`, 'error');
+        }
+    }).catch(error => {
+        if (btn) {
+            btn.textContent = originalText;
+            btn.disabled = false;
+        }
+        showToast(`❌ Error: ${error.message}`, 'error');
+    });
 }
 
 // ============================================
@@ -466,6 +520,14 @@ function saveSettings() {
     
     if (adminId && adminId.value.trim()) {
         localStorage.setItem('revere_adminId', adminId.value.trim());
+        if (webhookUrl && webhookUrl.value.trim()) {
+            // Update bot URL if changed
+            const newUrl = webhookUrl.value.trim();
+            if (newUrl !== BOT_API_URL) {
+                console.log(`🔄 Bot URL changed to: ${newUrl}`);
+                // You could store this and use it instead of the constant
+            }
+        }
         showToast('✅ Settings saved!', 'success');
     } else {
         showToast('⚠️ Please enter a valid Admin ID', 'error');
@@ -477,6 +539,11 @@ function loadSettings() {
     if (adminId) {
         const adminInput = document.getElementById('adminId');
         if (adminInput) adminInput.value = adminId;
+    }
+    // Load webhook URL
+    const webhookInput = document.getElementById('webhookUrl');
+    if (webhookInput) {
+        webhookInput.value = BOT_API_URL;
     }
 }
 
